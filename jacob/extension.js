@@ -49,9 +49,9 @@ function minifyCode() {
             return;
         } else {
             let minifiedCodeText = result.code;
-            vscode.workspace.openTextDocument( {
-                language: 'js'
-            } )
+            vscode.workspace.openTextDocument({
+                language: 'javascript'
+            })
             .then( doc =>  vscode.window.showTextDocument(doc))
             .then( editor => {
                 let editBuilder = textEdit => {
