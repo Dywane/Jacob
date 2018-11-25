@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 const UglifyJS = require("./uglify/tools/node");
+const convertor = require('./JSPatchConvertor/JPConvertor').convertor;
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -14,8 +15,11 @@ function activate(context) {
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with  registerCommand
     // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('extension.minifyCode', minifyCode);
-    context.subscriptions.push(disposable);
+    let minifyCodeDisposable = vscode.commands.registerCommand('extension.minifyCode', minifyCode);
+    context.subscriptions.push(minifyCodeDisposable);
+
+    let convertCodeDisposable = vscode.commands. registerCommand('extension.objcToJS', convertCode);
+    context.subscriptions.push(convertCodeDisposable);
 }
 exports.activate = activate;
 
@@ -28,40 +32,79 @@ exports.deactivate = deactivate;
 // MARK: Private Methods
 function minifyCode() {
     let editor = vscode.window.activeTextEditor;
-        if (!editor) {
-            // There is no editor open in VSCode.
-            vscode.window.showErrorMessage("You should open a JavaScript file first.");
+    if (!editor) {
+        // There is no editor open in VSCode.
+        vscode.window.showErrorMessage("You should open a JavaScript file first.");
+        return;
+    }
+    
+    let text = editor.document.getText();
+    if (!text) {
+        // There is no text in file.
+        vscode.window.showInformationMessage("There is no code to minify.");
+        return;
+    }
+    var result = UglifyJS.minify(text);
+    if (result.error) {
+        let ex = result.error;
+        if (ex.name == "SyntaxError") {
+            vscode.window.showErrorMessage("Parse error at " + editor.document.fileName +  ", error: " + ex.message + " at line: " + ex.line + ", " + "column: " + ex.col);
+        }
+        return;
+    } else {
+        let minifiedCodeText = result.code;
+        vscode.workspace.openTextDocument({
+            language: 'javascript'
+        })
+        .then(doc =>  vscode.window.showTextDocument(doc))
+        .then(editor => {
+            let editBuilder = textEdit => {
+                textEdit.insert(new vscode.Position(0, 0), String(minifiedCodeText));
+            };
+            return editor.edit(editBuilder, {
+                    undoStopBefore: true,
+                    undoStopAfter: false
+                } )
+                .then(() => editor);
+        });
+    }
+}
+
+function convertCode() {
+    let window = vscode.window;
+    let editor = window.activeTextEditor;
+    if (!editor) {
+        // There is no editor open in VSCode.
+        window.showErrorMessage("You should open an Objective-C file first.");
+        return;
+    }
+
+    let text = editor.document.getText();
+    if (!text) {
+        // There is no text in file.
+        window.showInformationMessage("There is no code to convert.");
+        return;
+    }
+
+    convertor(text, function(resultCode, error) {
+        if (error) {
+            console.log(error);
+            window.showErrorMessage(String(error));
             return;
         }
-        
-        let text = editor.document.getText();
-        if (!text) {
-            // There is no text in file.
-            vscode.window.showInformationMessage("There is no code to minify.");
-            return;
-        }
-        var result = UglifyJS.minify(text);
-        if (result.error) {
-            let ex = result.error;
-            if (ex.name == "SyntaxError") {
-                vscode.window.showErrorMessage("Parse error at " + editor.document.fileName +  ", error: " + ex.message + " at line: " + ex.line + ", " + "column: " + ex.col);
-            }
-            return;
-        } else {
-            let minifiedCodeText = result.code;
-            vscode.workspace.openTextDocument({
-                language: 'javascript'
+        vscode.workspace.openTextDocument({
+            language: 'javascript'
+        })
+        .then(doc => window.showTextDocument(doc))
+        .then(editor => {
+            let editBuilder = textEdit => {
+                textEdit.insert(new vscode.Position(0, 0), String(resultCode));
+            };
+            return editor.edit(editBuilder, {
+                undoStopBefore: true,
+                undoStopAfter: false
             })
-            .then( doc =>  vscode.window.showTextDocument(doc))
-            .then( editor => {
-                let editBuilder = textEdit => {
-                    textEdit.insert(new vscode.Position(0, 0), String(minifiedCodeText) );
-                };
-                return editor.edit( editBuilder, {
-                        undoStopBefore: true,
-                        undoStopAfter: false
-                    } )
-                    .then(() => editor );
-            } );
-        }
+            .then(() => editor);
+        });
+    });
 }

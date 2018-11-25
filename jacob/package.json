@@ -10,7 +10,8 @@
         "Other"
     ],
     "activationEvents": [
-        "onCommand:extension.minifyCode"
+        "onCommand:extension.minifyCode",
+        "onCommand:extension.objcToJS"
     ],
     "main": "./extension",
     "contributes": {
