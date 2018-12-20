@@ -26,8 +26,8 @@ You are welcome to fork and submit pull requests or issues.
 
 ## License
 
-DWAnimatedLabel is open-sourced software lincened under the MIT license.
+Jacob is open-sourced software lincened under the MIT license.
 
 ## Credits
 
-DWAnimatedLabel is owned and maintained by [Dywanedu](https://dywane.github.io)
+Jacob is owned and maintained by [Dywanedu](https://dywane.github.io)
